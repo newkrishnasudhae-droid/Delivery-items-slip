@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Item Slip</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; }
+      #slip { box-shadow: none; border: none; padding: 0; }
+      input, select { border: none !important; background: transparent !important; appearance: none; }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-4 flex justify-center items-start">
+
+  <div id="slip" class="bg-white w-full max-w-2xl p-6 rounded-xl shadow-xl">
+
+    <!-- Header -->
+    <div class="text-center border-b pb-4 mb-6">
+      <h1 class="text-3xl font-bold tracking-wide">ITEM SLIP</h1>
+      <p class="text-gray-500 text-sm mt-1">Delivery / Item Slip</p>
+    </div>
+
+    <!-- Customer Info -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div>
+        <label for="custName" class="font-semibold text-sm">Customer Name</label>
+        <input id="custName" type="text" placeholder="Enter customer name"
+          class="w-full border-b border-gray-300 focus:outline-none py-1 qr-trigger">
+      </div>
+
+      <div>
+        <label for="mobileNo" class="font-semibold text-sm">Mobile Number</label>
+        <input id="mobileNo" type="tel" placeholder="Enter mobile number"
+          class="w-full border-b border-gray-300 focus:outline-none py-1 qr-trigger">
+      </div>
+
+      <div>
+        <label for="slipNo" class="font-semibold text-sm">Slip No</label>
+        <input id="slipNo" type="text" value="101"
+          class="w-full border-b border-gray-300 focus:outline-none py-1 qr-trigger">
+      </div>
+
+      <div>
+        <label for="dateField" class="font-semibold text-sm">Date</label>
+        <input id="dateField" type="text"
+          class="w-full border-b border-gray-300 focus:outline-none py-1" readonly>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full border border-gray-300 text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="border px-3 py-2 w-12 text-center">#</th>
+            <th class="border px-3 py-2 text-left">Product Details</th>
+            <th class="border px-3 py-2 w-28 text-center">Qty / Weight</th>
+            <th class="border px-3 py-2 w-28 text-center">Unit</th>
+            <th class="border px-2 py-2 w-12 no-print"></th>
+          </tr>
+        </thead>
+
+        <tbody id="itemsBody">
+          <tr>
+            <td class="border px-3 py-2 text-center row-number">1</td>
+            <td class="border px-3 py-2">
+              <input type="text" placeholder="Product name"
+                class="w-full focus:outline-none item-name qr-trigger">
+            </td>
+            <td class="border px-3 py-2">
+              <input type="number" step="any" placeholder="0.00"
+                class="w-full text-center focus:outline-none qty-input qr-trigger">
+            </td>
+            <td class="border px-3 py-2 text-center">
+              <select class="w-full focus:outline-none bg-transparent text-center unit-select qr-trigger">
+                <option value="Pcs">Pcs</option>
+                <option value="Boxes">Boxes</option>
+                <option value="Kg">Kg</option>
+                <option value="Grams">Grams</option>
+                <option value="Ton">Ton</option>
+              </select>
+            </td>
+            <td class="border px-2 py-2 text-center no-print">
+              <button type="button" onclick="deleteRow(this)" class="text-red-600 font-bold hover:opacity-75">✕</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <button type="button" onclick="addRow()"
+      class="mt-3 text-blue-600 font-semibold hover:underline no-print">
+      + Add Item
+    </button>
+
+    <!-- Total Summary Section (Hidden during Print/PDF export via no-print class) -->
+    <div class="mt-6 border-t pt-4 no-print">
+      <h3 class="text-sm font-bold text-gray-700 mb-2">Total Quantity / Weight Summary (Screen Only):</h3>
+      <div id="totalsSummary" class="bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm flex flex-wrap gap-4 font-medium text-gray-800">
+        <span class="text-gray-400 italic">No quantities entered yet</span>
+      </div>
+    </div>
+
+    <!-- QR Code -->
+    <div class="text-center mt-8 border-t pt-6">
+      <div id="qrCode" class="flex justify-center"></div>
+      <p class="text-xs text-gray-500 mt-2">Scan to view slip details</p>
+    </div>
+
+    <!-- Signatures -->
+    <div class="flex justify-end mt-16 text-sm font-semibold">
+      <div class="text-center">
+        <div class="border-t border-black w-40 mb-1"></div>
+        Authorized Signature
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="fixed bottom-4 left-0 right-0 flex justify-center gap-3 no-print">
+    <button type="button" onclick="window.print()"
+      class="bg-blue-600 text-white px-5 py-3 rounded-lg font-bold shadow hover:bg-blue-700">
+      Print
+    </button>
+
+    <button type="button" onclick="downloadPDF()"
+      class="bg-gray-800 text-white px-5 py-3 rounded-lg font-bold shadow hover:bg-black">
+      PDF
+    </button>
+  </div>
+
+  <script>
+    // Set current date
+    document.getElementById('dateField').value = new Date().toLocaleDateString('en-IN');
+
+    // Event delegation for inputs and selects to update totals and QR code live
+    document.getElementById('slip').addEventListener('input', (e) => {
+      if (e.target.classList.contains('qr-trigger')) {
+        updateSummaryAndQR();
+      }
+    });
+
+    document.getElementById('slip').addEventListener('change', (e) => {
+      if (e.target.classList.contains('qr-trigger')) {
+        updateSummaryAndQR();
+      }
+    });
+
+    // Add row function
+    function addRow() {
+      const tbody = document.getElementById('itemsBody');
+      const count = tbody.rows.length + 1;
+      const row = document.createElement('tr');
+
+      row.innerHTML = `
+        <td class="border px-3 py-2 text-center row-number">${count}</td>
+        <td class="border px-3 py-2">
+          <input type="text" placeholder="Product name"
+            class="w-full focus:outline-none item-name qr-trigger">
+        </td>
+        <td class="border px-3 py-2">
+          <input type="number" step="any" placeholder="0.00"
+            class="w-full text-center focus:outline-none qty-input qr-trigger">
+        </td>
+        <td class="border px-3 py-2 text-center">
+          <select class="w-full focus:outline-none bg-transparent text-center unit-select qr-trigger">
+            <option value="Pcs">Pcs</option>
+            <option value="Boxes">Boxes</option>
+            <option value="Kg">Kg</option>
+            <option value="Grams">Grams</option>
+            <option value="Ton">Ton</option>
+          </select>
+        </td>
+        <td class="border px-2 py-2 text-center no-print">
+          <button type="button" onclick="deleteRow(this)" class="text-red-600 font-bold hover:opacity-75">✕</button>
+        </td>
+      `;
+
+      tbody.appendChild(row);
+      updateSummaryAndQR();
+    }
+
+    // Delete row function
+    function deleteRow(btn) {
+      const tbody = document.getElementById('itemsBody');
+
+      if (tbody.rows.length > 1) {
+        btn.closest('tr').remove();
+
+        // Renumber rows
+        [...tbody.rows].forEach((r, i) => {
+          r.querySelector('.row-number').textContent = i + 1;
+        });
+
+        updateSummaryAndQR();
+      }
+    }
+
+    // Calculate Totals and Generate QR Code
+    function updateSummaryAndQR() {
+      const slipNo = document.getElementById('slipNo').value || '';
+      const custName = document.getElementById('custName').value || '';
+      const mobile = document.getElementById('mobileNo').value || '';
+      const date = document.getElementById('dateField').value || '';
+
+      const items = [];
+      const totalsMap = {};
+
+      document.querySelectorAll('#itemsBody tr').forEach((row, index) => {
+        const item = row.querySelector('.item-name').value.trim();
+        const qtyVal = parseFloat(row.querySelector('.qty-input').value) || 0;
+        const qtyStr = row.querySelector('.qty-input').value.trim();
+        const unit = row.querySelector('.unit-select').value;
+
+        if (item || qtyStr) {
+          items.push(`${index + 1}. ${item || 'N/A'} - ${qtyStr || '0'} ${unit}`);
+        }
+
+        if (qtyVal > 0) {
+          totalsMap[unit] = (totalsMap[unit] || 0) + qtyVal;
+        }
+      });
+
+      // Render Total Summary Box
+      const summaryContainer = document.getElementById('totalsSummary');
+      const summaryKeys = Object.keys(totalsMap);
+
+      if (summaryKeys.length > 0) {
+        summaryContainer.innerHTML = summaryKeys
+          .map(unit => `<span class="bg-white px-3 py-1 rounded border border-gray-300">Total ${unit}: <strong class="text-blue-600">${totalsMap[unit].toLocaleString('en-IN', { maximumFractionDigits: 3 })}</strong></span>`)
+          .join('');
+      } else {
+        summaryContainer.innerHTML = `<span class="text-gray-400 italic">No quantities entered yet</span>`;
+      }
+
+      // Generate QR Code Text
+      const summaryText = summaryKeys.map(unit => `Total ${unit}: ${totalsMap[unit]}`).join(', ');
+
+      const qrText = [
+        `Slip No: ${slipNo}`,
+        `Date: ${date}`,
+        `Customer: ${custName}`,
+        `Mobile: ${mobile}`,
+        '',
+        'Products:',
+        items.length > 0 ? items.join('\n') : 'No items listed',
+        '',
+        summaryText ? `Summary: ${summaryText}` : ''
+      ].filter(Boolean).join('\n');
+
+      const qrContainer = document.getElementById('qrCode');
+      qrContainer.innerHTML = '';
+
+      new QRCode(qrContainer, {
+        text: qrText,
+        width: 150,
+        height: 150,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    // PDF Download
+    function downloadPDF() {
+      const element = document.getElementById('slip');
+      const filename = `Item-Slip-${document.getElementById('slipNo').value || '101'}.pdf`;
+
+      const options = {
+        margin: 8,
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(options).from(element).save();
+    }
+
+    // Initialize initial state
+    updateSummaryAndQR();
+  </script>
+
+</body>
+                </html>
+                
